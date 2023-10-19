@@ -1,0 +1,145 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Admin;
+use App\Models\Plan;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\OrderItem;
+use Auth;
+
+use Illuminate\Http\Request;
+
+class ProductController extends Controller
+{
+    public function addProduct()
+    {
+        $categories = Category::all();
+        $admins = Admin::all();
+        return view('admin-dashboard.product.add', compact('admins', 'categories'));
+    }
+
+    public function storeProduct(Request $request)
+    {
+        $product = new Product();
+        $product->name = $request->name;
+        $product->price = $request->price;
+        $product->category_id = $request->category_id;
+        $product->description = $request->description;
+        if ($request->hasFile('image')) {
+            $names = [];  // Initialize an empty array to store image filenames
+        
+            foreach ($request->file('image') as $image) {
+                if ($image) {
+                    $fileName = time() . '_products_' . $image->getClientOriginalName();
+                    $destinationPath = public_path('images/products');
+                    $image->move($destinationPath, $fileName);
+        
+                    // Store the filename in the array
+                    $names[] = $fileName;
+                }
+            }
+        
+            // Convert the array of filenames to JSON and save it in the 'image' column
+            $product->image = json_encode($names);
+        }
+        
+        
+        
+        
+        $product->longdes = $request->longdes;
+        $product->technical_description = $request->technical_description;
+        $product->save();
+        return back()->with('success', 'Product added successfully');
+    }
+    public function listProduct()
+    {
+        $admins = Admin::all();
+        $products = Product::with('category')->get();
+        $categories = Category::with('products')->get();
+        return view('admin-dashboard.product.list', compact('products', 'admins', 'categories'));
+    }
+    public function editProduct($id)
+    {
+        $admins = Admin::all();
+        $product = Product::find($id);
+        return view('admin-dashboard.product.edit', compact('product', 'admins'));
+    }
+    public function updateProduct(Request $request, $id)
+    {
+        $product = Product::find($id);
+        $product->name = $request->name;
+        $product->price = $request->price;
+        $product->description = $request->description;
+        $product->longdes = $request->longdes;
+        $product->technical_description = $request->technical_description;
+    
+        // Retrieve existing images
+        $existingImages = json_decode($product->image, true) ?? [];
+    
+        // Handle image removal
+        if ($request->has('remove_images')) {
+            $removeImages = $request->remove_images;
+            foreach ($removeImages as $imageToRemove) {
+                // Remove the image from the existing images array
+                unset($existingImages[array_search($imageToRemove, $existingImages)]);
+                // Optionally, delete the image file from the server
+                // Use unlink() or other file deletion method here
+            }
+        }
+    
+        // Handle new images
+        if ($request->hasFile('new_images')) {
+            foreach ($request->file('new_images') as $newImage) {
+                $fileName = time() . '_products_' . $newImage->getClientOriginalName();
+                $destinationPath = public_path('images/products');
+                $newImage->move($destinationPath, $fileName);
+                // Add the new image to the existing images array
+                $existingImages[] = $fileName;
+            }
+        }
+    
+        // Save the updated image array as JSON
+        $product->image = json_encode($existingImages);
+        $product->save();
+    
+        return redirect()->route('admin.edit_product', ['id' => $id])->with('success', 'Product updated successfully');
+    }
+    
+    public function deleteProduct($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return back()->with('error', 'Product  not found');
+        }
+
+        $purchases = OrderItem::where('product_id', $product->id)->count();
+     
+
+        if ($purchases > 0) {
+       
+    
+            return back()->with('error', 'Cannot delete. Users have purchased this product.');
+        }
+        $product->delete();
+        return back()->with('success', 'Product deleted successfully');
+
+    }
+    public function Cart(Request $request)
+    {
+        if (Auth::user()) {
+           
+            $productIDs = Cart::where('user_id', Auth::user()->id)->pluck('product_id')->toArray();
+            $products = Product::with('cart')->whereIn('id', $productIDs)->get();          
+            return view('website.cart', compact(['products']));
+        }
+        else{
+        
+            return redirect('myaccount');
+        }
+    }
+}
