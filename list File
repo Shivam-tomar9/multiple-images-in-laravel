@@ -1,0 +1,77 @@
+@extends('dashboard-layout/base')
+@push('extra_css')
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
+@endpush
+@section('content')
+    <div class="main_content_iner ">
+        <div class="container-fluid p-0">
+            <div class="row justify-content-center">
+                <div class="col-12">
+                    <div class="QA_section">
+                        <div class="white_box_tittle list_header">
+                            <h4>All Products</h4>
+
+                        </div>
+                        <div class="QA_table mb_30" style="background: #fff;padding: 25px;">
+                            @if (session()->get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    {{ session()->get('success') }}
+                                </div>
+                            @endif
+
+                            @if (session()->has('error'))
+                                <div class="alert alert-danger">
+                                    {{ session()->get('error') }}
+                                </div>
+                            @endif
+                            <table class="table lms_table_active" id="dataTable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Price</th>
+                                        <th scope="col">Description</th>
+                                        <th scope="col">Category</th>
+                                        {{-- <th scope="col">Image</th> --}}
+                                        <th scope="col">Long description</th>
+                                        <th scope="col">Technical Description</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($products as $product)
+                                        <tr>
+                                            <td>{{ $product->name }}</td>
+                                            <td>{{ $product->price }}</td>
+                                            <td>{!! $product->description !!}</td>
+                                            {{-- <td>{{ $product->category->name }}</td>
+                                          @if (isset($product->image) && is_string($product->image))
+                                                @foreach(json_decode($product->image) as $image)
+                                                    <td><img src="{{ asset('images/products/'.$image) }}" style="width:50%;height:50%" alt=""></td>
+                                                @endforeach
+                                            @endif --}}
+
+
+
+
+
+                                            <td>{!! $product->longdes !!}</td>
+                                            <td>{!! $product->technical_description !!}</td>
+
+                                            <td class="d-flex">
+                                                <a href="{{ route('admin.edit_product', $product->id) }}" class="mx-2"><i
+                                                        class="ti-pencil-alt" style="color:blue"></i></a>
+                                                <a href="{{ route('admin.delete_product', $product->id) }}"
+                                                    onclick="return confirm('Are you sure?')"><i class="ti-trash"
+                                                        style="color:red"></i></a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
